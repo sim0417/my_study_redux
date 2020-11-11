@@ -1,30 +1,74 @@
 import { createStore } from "redux";
 
-const ACTION_ADD = "ADD";
-const ACTION_MINUS = "MINUS";
+const form = document.querySelector("form");
+const input = document.querySelector("input");
+const ul = document.querySelector("ul");
 
-const plus = document.getElementById("plus");
-const minus = document.getElementById("minus");
-const number = document.querySelector("span");
+const ADD_TODO = "ADD";
+const DELETE_TODO = "MINUS";
 
-const countModifier = (count = 0, action) => {
+const addTodo = (text) => {
+  return {
+    type: ADD_TODO,
+    text,
+  };
+};
+
+const deleteTodo = (id) => {
+  return {
+    type: DELETE_TODO,
+    id,
+  };
+};
+
+const reducer = (state = [], action) => {
   switch (action.type) {
-    case ACTION_ADD:
-      return count++;
-    case ACTION_MINUS:
-      return count++;
+    case ADD_TODO:
+      return [{ text: action.text, id: Date.now() }, ...state];
+    case DELETE_TODO:
+      return state.filter((doto) => doto.id !== action.id);
     default:
-      return count;
+      return state;
   }
 };
 
-const countStore = createStore(countModifier);
+const store = createStore(reducer);
 
-const onChange = () => {
-  number.innerText = countStore.getState();
+const dispatchAddTodo = (text) => {
+  store.dispatch(addTodo(text));
 };
 
-countStore.subscribe(onChange);
+const dispatchDelateTodo = (event) => {
+  let {
+    target: {
+      parentNode: { id },
+    },
+  } = event;
 
-plus.addEventListener("click", () => countStore.dispatch({ type: ACTION_ADD }));
-minus.addEventListener("click", () => countStore.dispatch({ type: ACTION_MINUS }));
+  id = parseInt(id);
+  store.dispatch(deleteTodo(id));
+};
+
+const onSubmit = (event) => {
+  event.preventDefault();
+  const todo = input.value;
+  input.value = "";
+  dispatchAddTodo(todo);
+};
+
+store.subscribe(() => console.log(store.getState()));
+
+const paintTodos = () => {
+  const toDos = store.getState();
+  ul.innerHTML = toDos
+    .map((todo) => `<li id=${todo.id}>${todo.text} <button>DEL</button></li>`)
+    .join("");
+
+  ul.querySelectorAll("button").forEach((btn) => {
+    btn.addEventListener("click", dispatchDelateTodo);
+  });
+};
+
+store.subscribe(paintTodos);
+
+form.addEventListener("submit", onSubmit);
